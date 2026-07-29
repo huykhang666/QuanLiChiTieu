@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-[#FBFBFA] text-[#111111] antialiased transition-colors duration-200;
+}
+
+/* Dark Mode Minimalist Overrides */
+.dark body {
+  background-color: #121211;
+  color: #F5F5F4;
+}
+
+.dark .bg-\[\#FBFBFA\] {
+  background-color: #121211 !important;
+}
+
+.dark .bg-white {
+  background-color: #1C1C1A !important;
+}
+
+.dark .text-\[\#111111\] {
+  color: #F5F5F4 !important;
+}
+
+.dark .text-\[\#787774\] {
+  color: #90908E !important;
+}
+
+.dark .border-\[\#EAEAEA\] {
+  border-color: #2A2A28 !important;
+}
+
+.dark .divide-\[\#EAEAEA\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #2A2A28 !important;
+}
+
+.dark .hover\:bg-\[\#F7F6F3\]:hover {
+  background-color: #252523 !important;
+}
+
+.dark .hover\:bg-\[\#FBFBFA\]:hover {
+  background-color: #20201F !important;
+}
+
+.dark .hover\:bg-\[\#FDEBEC\]:hover {
+  background-color: #2D1A1A !important;
+}
+
+.dark .bg-\[\#F7F6F3\] {
+  background-color: #20201F !important;
+}
+
+.dark .focus\:border-\[\#111111\]:focus {
+  border-color: #F5F5F4 !important;
+}
+
+.dark input, .dark select, .dark textarea {
+  background-color: #151514 !important;
+  color: #F5F5F4 !important;
+}
+
+/* Dark mode support for modals */
+.dark .bg-black\/30 {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}

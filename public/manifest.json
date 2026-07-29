@@ -1,0 +1,24 @@
+{
+  "name": "Di Veo — Quản Lý Chi Tiêu",
+  "short_name": "Di Veo",
+  "description": "Ghi lại từng đồng, đừng để tiền đi vèo mà không biết.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#FBFBFA",
+  "theme_color": "#111111",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

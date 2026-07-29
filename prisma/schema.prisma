@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  displayName  String?
+  savingsRate  Int           @default(25)
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+  budgets      Budget[]
+  savingsGoals SavingsGoal[]
+  categories   Category[]
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String
+  type         String // "income" | "expense"
+  icon         String?
+  isDefault    Boolean       @default(true)
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+  budgets      Budget[]
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  userId      String
+  categoryId  String
+  amount      Int // đơn vị: VNĐ
+  type        String // "income" | "expense"
+  note        String?
+  date        DateTime
+  isRecurring Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+}
+
+model Budget {
+  id         String @id @default(uuid())
+  userId     String
+  categoryId String
+  month      Int
+  year       Int
+  limit      Int
+
+  user     User     @relation(fields: [userId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+}
+
+model SavingsGoal {
+  id            String    @id @default(uuid())
+  userId        String
+  title         String
+  targetAmount  Int
+  currentAmount Int       @default(0)
+  deadline      DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+}
