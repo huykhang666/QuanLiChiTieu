@@ -1,0 +1,34 @@
+<svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="coinGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBC96B"/>
+      <stop offset="100%" stop-color="#E8992A"/>
+    </linearGradient>
+    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#213458"/>
+      <stop offset="100%" stop-color="#151F38"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon tile -->
+  <rect x="10" y="10" width="200" height="200" rx="44" fill="url(#bgGrad2)"/>
+
+  <!-- Motion trail -->
+  <path d="M 44 88 Q 90 88 120 98" fill="none" stroke="#2FBF9F" stroke-width="7" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 54 110 Q 100 110 128 110" fill="none" stroke="#2FBF9F" stroke-width="9" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 48 132 Q 92 132 124 122" fill="none" stroke="#2FBF9F" stroke-width="7" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- Coin -->
+  <circle cx="146" cy="110" r="48" fill="url(#coinGrad2)"/>
+  <circle cx="146" cy="110" r="48" fill="none" stroke="#B87418" stroke-width="2" opacity="0.4"/>
+  <circle cx="146" cy="110" r="37" fill="none" stroke="#151F38" stroke-width="2.2" opacity="0.5"/>
+  <text x="146" y="127" font-family="Arial, Helvetica, sans-serif" font-size="50" font-weight="700"
+        text-anchor="middle" fill="#151F38">₫</text>
+  <ellipse cx="130" cy="92" rx="15" ry="7" fill="#FFFFFF" opacity="0.25"/>
+
+  <!-- Wordmark -->
+  <text x="240" y="120" font-family="'Segoe UI', Arial, Helvetica, sans-serif" font-size="64" font-weight="800"
+        fill="#151F38">DI VEO</text>
+  <text x="242" y="160" font-family="'Segoe UI', Arial, Helvetica, sans-serif" font-size="26" font-weight="500"
+        letter-spacing="1.5" fill="#2FBF9F">QUẢN LÝ CHI TIÊU</text>
+</svg>

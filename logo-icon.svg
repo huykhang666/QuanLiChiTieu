@@ -1,0 +1,32 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="coinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBC96B"/>
+      <stop offset="100%" stop-color="#E8992A"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#213458"/>
+      <stop offset="100%" stop-color="#151F38"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background tile -->
+  <rect x="0" y="0" width="512" height="512" rx="104" fill="url(#bgGrad)"/>
+
+  <!-- Motion trail ("vèo") -->
+  <path d="M 88 214 Q 170 214 224 232" fill="none" stroke="#2FBF9F" stroke-width="14" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 108 256 Q 190 256 236 256" fill="none" stroke="#2FBF9F" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 96 298 Q 176 298 226 280" fill="none" stroke="#2FBF9F" stroke-width="14" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- Coin -->
+  <circle cx="318" cy="256" r="112" fill="url(#coinGrad)"/>
+  <circle cx="318" cy="256" r="112" fill="none" stroke="#B87418" stroke-width="4" opacity="0.4"/>
+  <circle cx="318" cy="256" r="86" fill="none" stroke="#151F38" stroke-width="5" opacity="0.5"/>
+
+  <!-- Dong sign on coin -->
+  <text x="318" y="296" font-family="Arial, Helvetica, sans-serif" font-size="118" font-weight="700"
+        text-anchor="middle" fill="#151F38">₫</text>
+
+  <!-- highlight -->
+  <ellipse cx="282" cy="216" rx="34" ry="16" fill="#FFFFFF" opacity="0.25"/>
+</svg>
