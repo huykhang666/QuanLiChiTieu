@@ -2,19 +2,21 @@
 
 **DI Veo** là ứng dụng web giúp quản lý thu chi cá nhân được thiết kế theo phong cách tối giản (Editorial UI), tối ưu hóa trải nghiệm thao tác nhanh cho sinh viên và người có thu nhập không cố định.
 
+🔗 **Link Demo Live:** [quan-li-chi-tieu-xe6v.vercel.app](https://quan-li-chi-tieu-xe6v.vercel.app/)
+
 ---
 
 ## 🌟 Tính Năng Nổi Bật
 
-*   ⚡ **Ghi Chép Giao Dịch Trong 3 Giây**: Sử dụng QuickAdd bottom sheet tiện lợi, lưu giao dịch nhanh chóng không cần chuyển trang.
-*   🧭 **Popup Tab Navigation (NavDrawer)**: Bottom sheet chiếm 92vh với chiều rộng max-w-4xl tràn màn hình, tích hợp đầy đủ 5 phân hệ chính:
+*   ⚡ **Ghi Chép Hàng Loạt (Multi-entry)**: Hỗ trợ thêm nhiều giao dịch vào danh sách chờ trước khi nhấn "Lưu tất cả" chỉ với một lần bấm, cực kì tiết kiệm thời gian.
+*   🧭 **Popup Tab Navigation (NavDrawer)**: Drawer chiếm 92vh với chiều rộng max-w-4xl tràn màn hình, tích hợp đầy đủ 5 phân hệ chính:
     *   **Giao dịch**: Lọc theo thời gian/danh mục, trực tiếp sửa & xóa giao dịch.
     *   **Báo cáo**: Biểu đồ tròn Recharts phân bổ chi phí, thống kê động theo Tuần/Tháng & xuất file Excel trực tiếp.
     *   **Hạn mức**: Cấu hình hạn mức chi tiêu trực quan cho từng danh mục.
     *   **Mục tiêu**: Lên kế hoạch tiết kiệm, cập nhật tiến độ tích lũy thông minh.
     *   **Cài đặt**: Điều chỉnh nhanh tỉ lệ tiết kiệm đề xuất cho tuần kế tiếp.
-*   📈 **Xu Hướng Thu Chi (Chart)**: Biểu đồ cột Recharts hỗ trợ chuyển đổi chế độ xem linh hoạt giữa Tuần & Tháng, tự động rút gọn số tiền thông minh (k, tr).
-*   📱 **Giao diện Minimalist Editorial**: Tông màu xanh tươi mới sáng sủa (`#16A34A`), font chữ Sans-serif hiện đại, tối ưu hóa hiển thị.
+*   📊 **Biểu Đồ Cột Recharts**: Trực quan hóa xu hướng thu chi Tuần/Tháng, tự động rút gọn số tiền thông minh (k, tr).
+*   📱 **Giao diện Minimalist & Vibrant**: Tông màu Emerald Green chủ đạo (`#10B981`), độ tương phản cao sắc nét, hỗ trợ **Dark Mode** toàn diện từ màn hình Đăng nhập tới Dashboard.
 
 ---
 
