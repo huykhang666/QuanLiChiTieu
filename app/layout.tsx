@@ -20,10 +20,14 @@ export const metadata: Metadata = {
   title: "DI Veo — Quản Lý Chi Tiêu",
   description: "Ghi lại từng đồng, đừng để tiền đi vèo mà không biết.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon-192.png",
+  },
 };
 
 export const viewport = {
-  themeColor: "#111111",
+  themeColor: "#213458",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -37,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${plusJakartaSans.variable} ${instrumentSerif.variable}`}>
       <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
