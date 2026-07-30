@@ -21,12 +21,6 @@ export async function GET(req: NextRequest) {
     const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
     const endOfToday = new Date(now); endOfToday.setHours(23, 59, 59, 999);
 
-    const todayTx = await prisma.transaction.findMany({
-      where: { userId: user.id, date: { gte: startOfToday, lte: endOfToday } },
-    });
-    let todayIncome = 0, todayExpense = 0;
-    for (const t of todayTx) { if (t.type === "income") todayIncome += t.amount; else todayExpense += t.amount; }
-
     // 2. Tuần này
     const startOfWeek = new Date(now);
     const day = startOfWeek.getDay();
@@ -36,34 +30,75 @@ export async function GET(req: NextRequest) {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
 
-    const weekTx = await prisma.transaction.findMany({
-      where: { userId: user.id, date: { gte: startOfWeek, lte: endOfWeek } },
-    });
-    let weekIncome = 0, weekExpense = 0;
-    for (const t of weekTx) { if (t.type === "income") weekIncome += t.amount; else weekExpense += t.amount; }
-
     // 3. Tháng này
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
     const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
     const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
 
-    const monthTx = await prisma.transaction.findMany({
-      where: { userId: user.id, date: { gte: startOfMonth, lte: endOfMonth } },
+    // 4. Chart 7 ngày gần nhất (nếu period !== "month")
+    const start7 = new Date(now); start7.setDate(now.getDate() - 6); start7.setHours(0, 0, 0, 0);
+
+    // Tìm khoảng ngày bao quát tất cả để truy vấn đúng 1 lần (Single Query)
+    const globalStart = new Date(Math.min(
+      startOfToday.getTime(),
+      startOfWeek.getTime(),
+      startOfMonth.getTime(),
+      start7.getTime()
+    ));
+    const globalEnd = new Date(Math.max(
+      endOfToday.getTime(),
+      endOfWeek.getTime(),
+      endOfMonth.getTime()
+    ));
+
+    // Thực hiện tất cả các truy vấn DB đồng thời (Parallel Batch)
+    const [transactions, dbUser, budgets] = await Promise.all([
+      prisma.transaction.findMany({
+        where: { userId: user.id, date: { gte: globalStart, lte: globalEnd } },
+      }),
+      prisma.user.findUnique({
+        where: { id: user.id },
+      }),
+      prisma.budget.findMany({
+        where: { userId: user.id, month: currentMonth, year: currentYear },
+        include: { category: true },
+      }),
+    ]);
+
+    // Phân loại và tính toán dữ liệu trong bộ nhớ (In-memory filter - cực kì nhanh)
+    // Hôm nay
+    const todayTx = transactions.filter((t) => {
+      const d = new Date(t.date);
+      return d >= startOfToday && d <= endOfToday;
+    });
+    let todayIncome = 0, todayExpense = 0;
+    for (const t of todayTx) { if (t.type === "income") todayIncome += t.amount; else todayExpense += t.amount; }
+
+    // Tuần này
+    const weekTx = transactions.filter((t) => {
+      const d = new Date(t.date);
+      return d >= startOfWeek && d <= endOfWeek;
+    });
+    let weekIncome = 0, weekExpense = 0;
+    for (const t of weekTx) { if (t.type === "income") weekIncome += t.amount; else weekExpense += t.amount; }
+
+    // Tháng này
+    const monthTx = transactions.filter((t) => {
+      const d = new Date(t.date);
+      return d >= startOfMonth && d <= endOfMonth;
     });
     let monthIncome = 0, monthExpense = 0;
     for (const t of monthTx) { if (t.type === "income") monthIncome += t.amount; else monthExpense += t.amount; }
 
-    // 4. Savings rate
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+    // Savings rate
     const savingsRate = dbUser?.savingsRate ?? 25;
     const suggestedSavings = calcSuggestedSavings(weekIncome, weekExpense, savingsRate / 100);
 
-    // 5. Chart data
+    // Chart data
     let chartData: { date: string; income: number; expense: number }[] = [];
 
     if (period === "month") {
-      // Group by week of month
       const weeks: { [key: string]: { income: number; expense: number } } = {};
       const daysInMonth = endOfMonth.getDate();
       for (let i = 1; i <= daysInMonth; i++) {
@@ -81,7 +116,6 @@ export async function GET(req: NextRequest) {
       }
       chartData = Object.entries(weeks).map(([date, vals]) => ({ date, ...vals }));
     } else {
-      // 7 ngày gần nhất
       for (let i = 6; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(now.getDate() - i);
@@ -91,9 +125,9 @@ export async function GET(req: NextRequest) {
           expense: 0,
         });
       }
-      const start7 = new Date(now); start7.setDate(now.getDate() - 6); start7.setHours(0, 0, 0, 0);
-      const last7Tx = await prisma.transaction.findMany({
-        where: { userId: user.id, date: { gte: start7, lte: endOfToday } },
+      const last7Tx = transactions.filter((t) => {
+        const d = new Date(t.date);
+        return d >= start7 && d <= endOfToday;
       });
       for (const t of last7Tx) {
         const tDate = new Date(t.date);
@@ -103,11 +137,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 6. Budget warnings
-    const budgets = await prisma.budget.findMany({
-      where: { userId: user.id, month: currentMonth, year: currentYear },
-      include: { category: true },
-    });
+    // Budget warnings
     const expByCategory: { [key: string]: number } = {};
     for (const t of monthTx) {
       if (t.type === "expense") expByCategory[t.categoryId] = (expByCategory[t.categoryId] || 0) + t.amount;
