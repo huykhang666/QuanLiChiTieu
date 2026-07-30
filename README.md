@@ -23,10 +23,10 @@
 ## 📸 Hình Ảnh Giao Diện
 
 ### 1. Màn hình Đăng nhập tối giản
-![Đăng nhập](public/docs/login.png)
+![Đăng nhập](public/docs/login.png?v=2)
 
 ### 2. Dashboard Tổng quan & Popup Mục tiêu Tiết kiệm
-![Dashboard & Mục tiêu](public/docs/dashboard.png)
+![Dashboard & Mục tiêu](public/docs/dashboard.png?v=2)
 
 ---
 
