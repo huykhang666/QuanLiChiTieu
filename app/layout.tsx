@@ -33,6 +33,8 @@ export const viewport = {
   maximumScale: 1,
 };
 
+import SessionGuard from "@/components/SessionGuard";
+
 export default function RootLayout({
   children,
 }: {
@@ -59,7 +61,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased bg-[#FBFBFA] text-[#111111]">{children}</body>
+      <body className="font-sans antialiased bg-[#FBFBFA] text-[#111111]">
+        <SessionGuard />
+        {children}
+      </body>
     </html>
   );
 }
