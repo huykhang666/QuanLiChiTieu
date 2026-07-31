@@ -90,9 +90,10 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error("Lỗi xác thực vân tay:", err);
-      // Hủy hoặc lỗi quét vân tay -> Chỉ hiện thông báo lỗi nhẹ, để người dùng gõ mật khẩu
+      // Đóng overlay ngay lập tức để người dùng nhập mật khẩu bình thường
+      setShowBioOverlay(false);
       if (err.name !== "NotAllowedError") {
-        setError("Xác thực vân tay thất bại. Vui lòng nhập mật khẩu.");
+        setError("Không tìm thấy khóa vân tay hợp lệ trên thiết bị này. Vui lòng nhập mật khẩu.");
       }
     } finally {
       setLoading(false);
