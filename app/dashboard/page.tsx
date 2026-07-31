@@ -46,6 +46,7 @@ const QUICK_LINKS: {
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [preloadedData, setPreloadedData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -74,13 +75,26 @@ export default function DashboardPage() {
     return res.json();
   };
 
+  const loadPreload = async () => {
+    try {
+      const res = await fetch("/api/preload");
+      if (res.ok) setPreloadedData(await res.json());
+    } catch {}
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
         const { data } = await supabase.auth.getUser();
         if (!data.user) { router.push("/login"); return; }
         setUser(data.user);
-        setSummary(await loadSummary("week"));
+        // Fire both in parallel — summary for the dashboard KPIs,
+        // preload for the drawer panels (so they open instantly)
+        const [summaryData] = await Promise.all([
+          loadSummary("week"),
+          loadPreload(),
+        ]);
+        setSummary(summaryData);
       } catch (err: any) { setError(err.message); }
       finally { setLoading(false); }
     };
@@ -531,7 +545,12 @@ export default function DashboardPage() {
           try { setSummary(await loadSummary(chartPeriod)); } catch { }
         }}
       />
-      <NavDrawer section={drawerSection} onClose={() => setDrawerSection(null)} />
+      <NavDrawer
+        section={drawerSection}
+        onClose={() => setDrawerSection(null)}
+        preloadedData={preloadedData}
+        onDataMutated={loadPreload}
+      />
     </div>
   );
 }

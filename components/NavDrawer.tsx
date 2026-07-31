@@ -29,9 +29,18 @@ interface Goal {
   id: string; title: string; targetAmount: number; currentAmount: number; deadline: string | null;
 }
 
+interface PreloadedData {
+  categories: Category[];
+  transactions: Transaction[];
+  budgets: any[];
+  goals: Goal[];
+}
+
 interface Props {
   section: DrawerSection | null;
   onClose: () => void;
+  preloadedData?: PreloadedData | null;
+  onDataMutated?: () => void;
 }
 
 const SECTION_LABELS: Record<DrawerSection, string> = {
@@ -68,6 +77,22 @@ const Spinner = () => (
   </div>
 );
 
+/** Skeleton list for instant perceived performance */
+const SkeletonList = () => (
+  <div className="space-y-2 py-2">
+    {[1,2,3,4,5].map(i => (
+      <div key={i} className="flex items-center gap-3 p-3.5 border border-[#F0F0EE] rounded-xl animate-pulse">
+        <div className="w-9 h-9 rounded-xl bg-[#F0F0EE]" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3 bg-[#F0F0EE] rounded w-1/3" />
+          <div className="h-2.5 bg-[#F0F0EE] rounded w-1/2" />
+        </div>
+        <div className="h-4 bg-[#F0F0EE] rounded w-20" />
+      </div>
+    ))}
+  </div>
+);
+
 const Empty = ({ text }: { text: string }) => (
   <div className="py-12 text-center">
     <p className="text-sm text-[#787774] font-medium">{text}</p>
@@ -77,10 +102,14 @@ const Empty = ({ text }: { text: string }) => (
 /* ─────────────────────────────────────────
    1. TRANSACTIONS PANEL (With Editing / Filtering / Deleting)
 ───────────────────────────────────────── */
-function TransactionsPanel() {
-  const [items, setItems] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+function TransactionsPanel({ initialCategories, initialTransactions, onMutated }: {
+  initialCategories: Category[];
+  initialTransactions: Transaction[];
+  onMutated?: () => void;
+}) {
+  const [items, setItems] = useState<Transaction[]>(initialTransactions);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [loading, setLoading] = useState(initialTransactions.length === 0 && initialCategories.length === 0);
 
   // Filters
   const [fromDate, setFromDate] = useState("");
@@ -106,11 +135,21 @@ function TransactionsPanel() {
     finally { setLoading(false); }
   };
 
+  // Only re-fetch from server when filter changes (not on mount if we have preloaded data)
+  const isFiltered = fromDate || toDate || selectedCat;
   useEffect(() => {
-    fetch("/api/categories")
-      .then(r => r.json())
-      .then(d => setCategories(Array.isArray(d) ? d : []));
-    fetchTransactions();
+    if (!isFiltered && initialTransactions.length > 0) {
+      // Use in-memory filter on preloaded data
+      let filtered = initialTransactions;
+      setItems(filtered);
+      setLoading(false);
+      return;
+    }
+    if (isFiltered || initialTransactions.length === 0) {
+      setLoading(true);
+      fetchTransactions();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromDate, toDate, selectedCat]);
 
   const handleDelete = async (id: string) => {
@@ -120,12 +159,13 @@ function TransactionsPanel() {
       const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
       if (res.ok) {
         setItems(prev => prev.filter(t => t.id !== id));
+        onMutated?.();
       }
     } catch {}
     finally { setDeletingId(null); }
   };
 
-  if (loading) return <Spinner />;
+  if (loading) return <SkeletonList />;
 
   return (
     <div className="space-y-4">
@@ -216,7 +256,11 @@ function TransactionsPanel() {
           item={editingItem}
           categories={categories}
           onClose={() => setEditingItem(null)}
-          onSuccess={() => { setEditingItem(null); fetchTransactions(); }}
+          onSuccess={() => {
+            setEditingItem(null);
+            fetchTransactions();
+            onMutated?.();
+          }}
         />
       )}
     </div>
@@ -491,17 +535,29 @@ function SummaryPanel() {
 /* ─────────────────────────────────────────
    3. BUDGETS CONFIG PANEL (With Direct Forms)
 ───────────────────────────────────────── */
-function BudgetsPanel() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [limits, setLimits] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errMsg, setErrMsg] = useState("");
-
+function BudgetsPanel({ initialCategories, initialBudgets, onMutated }: {
+  initialCategories: Category[];
+  initialBudgets: any[];
+  onMutated?: () => void;
+}) {
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
+
+  // Initialize from preloaded data directly — no loading state needed
+  const expenseCatsInit = initialCategories.filter((c: Category) => c.type === "expense");
+  const limitsInit: Record<string, string> = {};
+  expenseCatsInit.forEach((c: Category) => {
+    const matched = initialBudgets.find((b: any) => b.categoryId === c.id);
+    limitsInit[c.id] = matched ? matched.limit.toString() : "0";
+  });
+
+  const [categories, setCategories] = useState<Category[]>(expenseCatsInit);
+  const [limits, setLimits] = useState<Record<string, string>>(limitsInit);
+  const [loading, setLoading] = useState(expenseCatsInit.length === 0);
+  const [saving, setSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errMsg, setErrMsg] = useState("");
 
   const loadData = async () => {
     try {
@@ -512,10 +568,8 @@ function BudgetsPanel() {
       if (resCat.ok && resBud.ok) {
         const catData = await resCat.json();
         const budData = await resBud.json();
-
         const expenseCats = catData.filter((c: Category) => c.type === "expense");
         setCategories(expenseCats);
-
         const initialLimits: Record<string, string> = {};
         expenseCats.forEach((c: Category) => {
           const matched = budData.find((b: any) => b.categoryId === c.id);
@@ -528,7 +582,9 @@ function BudgetsPanel() {
   };
 
   useEffect(() => {
-    loadData();
+    // Only fetch if we didn't get preloaded data
+    if (expenseCatsInit.length === 0) loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -549,6 +605,7 @@ function BudgetsPanel() {
       await Promise.all(promises);
       setSuccessMsg("Lưu hạn mức ngân sách thành công!");
       setTimeout(() => setSuccessMsg(""), 3000);
+      onMutated?.();
     } catch (err: any) {
       setErrMsg(err.message || "Không thể lưu hạn mức.");
     } finally {
@@ -605,9 +662,12 @@ function BudgetsPanel() {
 /* ─────────────────────────────────────────
    4. GOALS SAVINGS PANEL (Create / Contribute / Edit / Delete)
 ───────────────────────────────────────── */
-function GoalsPanel() {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
+function GoalsPanel({ initialGoals, onMutated }: {
+  initialGoals: Goal[];
+  onMutated?: () => void;
+}) {
+  const [goals, setGoals] = useState<Goal[]>(initialGoals);
+  const [loading, setLoading] = useState(initialGoals.length === 0);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -629,7 +689,9 @@ function GoalsPanel() {
   };
 
   useEffect(() => {
-    fetchGoals();
+    // Only fetch if we didn't receive preloaded goals
+    if (initialGoals.length === 0) fetchGoals();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -649,6 +711,7 @@ function GoalsPanel() {
       if (res.ok) {
         setTitle(""); setTargetAmount(""); setDeadline("");
         fetchGoals();
+        onMutated?.();
       } else {
         setFormErr("Lỗi tạo mục tiêu.");
       }
@@ -672,6 +735,7 @@ function GoalsPanel() {
       if (res.ok) {
         setContributeAmount(prev => ({ ...prev, [g.id]: "" }));
         fetchGoals();
+        onMutated?.();
       }
     } catch {
       alert("Lỗi khi nộp tiền tiết kiệm.");
@@ -682,7 +746,7 @@ function GoalsPanel() {
     if (!confirm("Bạn muốn xóa mục tiêu này?")) return;
     try {
       const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
-      if (res.ok) fetchGoals();
+      if (res.ok) { fetchGoals(); onMutated?.(); }
     } catch {}
   };
 
@@ -935,7 +999,7 @@ function SettingsPanel() {
 /* ─────────────────────────────────────────
    MAIN NAVDRAWER
 ───────────────────────────────────────── */
-export default function NavDrawer({ section: initialSection, onClose }: Props) {
+export default function NavDrawer({ section: initialSection, onClose, preloadedData, onDataMutated }: Props) {
   const [activeSection, setActiveSection] = useState<DrawerSection>(initialSection ?? "transactions");
 
   useEffect(() => {
@@ -951,11 +1015,15 @@ export default function NavDrawer({ section: initialSection, onClose }: Props) {
   if (!initialSection) return null;
 
   const renderContent = () => {
+    const cats = preloadedData?.categories ?? [];
+    const txns = preloadedData?.transactions ?? [];
+    const buds = preloadedData?.budgets ?? [];
+    const gols = preloadedData?.goals ?? [];
     switch (activeSection) {
-      case "transactions": return <TransactionsPanel />;
+      case "transactions": return <TransactionsPanel initialCategories={cats} initialTransactions={txns} onMutated={onDataMutated} />;
       case "summary":      return <SummaryPanel />;
-      case "budgets":      return <BudgetsPanel />;
-      case "goals":        return <GoalsPanel />;
+      case "budgets":      return <BudgetsPanel initialCategories={cats} initialBudgets={buds} onMutated={onDataMutated} />;
+      case "goals":        return <GoalsPanel initialGoals={gols} onMutated={onDataMutated} />;
       case "settings":     return <SettingsPanel />;
     }
   };
