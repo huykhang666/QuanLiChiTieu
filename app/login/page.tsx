@@ -63,7 +63,7 @@ export default function LoginPage() {
         publicKey: {
           challenge,
           rpId: window.location.hostname,
-          userVerification: "required",
+          userVerification: "preferred",
           timeout: 60000,
         }
       });
@@ -122,7 +122,9 @@ export default function LoginPage() {
           pubKeyCredParams: [{ alg: -7, type: "public-key" }], // ES256
           authenticatorSelection: { 
             authenticatorAttachment: "platform", 
-            userVerification: "required" 
+            userVerification: "preferred",
+            residentKey: "required",
+            requireResidentKey: true
           },
           timeout: 60000,
         }

@@ -994,7 +994,9 @@ function SettingsPanel() {
             pubKeyCredParams: [{ alg: -7, type: "public-key" }],
             authenticatorSelection: { 
               authenticatorAttachment: "platform", 
-              userVerification: "required" 
+              userVerification: "preferred",
+              residentKey: "required",
+              requireResidentKey: true
             },
             timeout: 60000,
           }
