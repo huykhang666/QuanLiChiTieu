@@ -387,10 +387,13 @@ export default function LoginPage() {
               </div>
             )}
 
+          <div className="flex gap-2 mt-2">
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3.5 text-white text-sm font-black rounded-xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none bg-gradient-to-r from-emerald-600 to-green-500"
+              className={`py-3.5 text-white text-sm font-black rounded-xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none bg-gradient-to-r from-emerald-600 to-green-500 ${
+                isLogin && hasBioAuth ? "flex-1" : "w-full"
+              }`}
             >
               {loading ? (
                 <svg className="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -400,20 +403,21 @@ export default function LoginPage() {
               ) : isLogin ? "Đăng nhập →" : "Tạo tài khoản →"}
             </button>
 
-            {/* Vân tay nhanh dành cho user đã bật sinh trắc học */}
+            {/* Vân tay nhanh thiết kế gọn kế bên nút Đăng nhập */}
             {isLogin && hasBioAuth && (
               <button
                 type="button"
                 onClick={triggerBiometricLogin}
                 disabled={loading}
-                className="w-full mt-1.5 py-3 border border-emerald-500 dark:border-emerald-600/50 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl hover:bg-emerald-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                title="Đăng nhập nhanh bằng Vân tay / FaceID"
+                className="px-4 border border-emerald-500 dark:border-emerald-600/50 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center shrink-0 active:scale-[0.95]"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11a13.915 13.915 0 00-3.1-8.7A8 8 0 000 8c0 3.86 3.14 7 7 7a6.97 6.97 0 003.89-1.2M12 11c0-3.517 1.009-6.799 2.753-9.571m-3.44 2.04l-.054-.09A13.916 13.916 0 0015 11c0 3.86-3.14 7-7 7a6.97 6.97 0 00-3.89-1.2M12 11a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                Xác thực bằng Vân tay / FaceID
               </button>
             )}
+          </div>
           </form>
 
           <p className="text-center text-xs text-slate-300 dark:text-slate-600 mt-8">
