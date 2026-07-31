@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
 // Banking-style timeout: If the app is inactive or backgrounded 
-// for more than 30 seconds, force logout and require biometrics/password again.
-const INACTIVITY_TIMEOUT_MS = 30 * 1000; 
+// for more than 5 minutes, force logout and require password again.
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; 
 
 export default function SessionGuard() {
   const router = useRouter();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { syncUserInDb } from "./actions";
@@ -14,145 +14,9 @@ export default function LoginPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [hasBioAuth, setHasBioAuth] = useState(false);
-  const [showBioPrompt, setShowBioPrompt] = useState(false);
-  const [showBioOverlay, setShowBioOverlay] = useState(false);
-  const [tempSession, setTempSession] = useState<any>(null);
-
+  
   const router = useRouter();
   const supabase = createClient();
-
-  // Kiểm tra thiết bị có hỗ trợ vân tay và đã kích hoạt chưa
-  useEffect(() => {
-    const checkBiometrics = async () => {
-      const bioEnabled = localStorage.getItem("bio_auth_enabled") === "true";
-      const hasToken = !!localStorage.getItem("bio_refresh_token");
-      
-      const isBiometricSupported = 
-        typeof window !== "undefined" && 
-        window.PublicKeyCredential && 
-        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-
-      if (bioEnabled && hasToken && isBiometricSupported) {
-        setHasBioAuth(true);
-        setShowBioOverlay(true);
-        // Tự động gọi pop-up quét vân tay ngay khi load trang
-        triggerBiometricLogin();
-      }
-    };
-    checkBiometrics();
-  }, []);
-
-  // Thực hiện quét vân tay & đăng nhập
-  const triggerBiometricLogin = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const savedEmail = localStorage.getItem("bio_email") || "";
-      const savedRefreshToken = localStorage.getItem("bio_refresh_token") || "";
-
-      if (!savedRefreshToken) {
-        throw new Error("Không tìm thấy dữ liệu vân tay trên thiết bị này.");
-      }
-
-      // 1. Gọi pop-up quét vân tay của điện thoại / máy tính
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-
-      await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          rpId: window.location.hostname,
-          userVerification: "preferred",
-          timeout: 60000,
-        }
-      });
-
-      // 2. Vân tay khớp -> Phục hồi session của Supabase
-      const { data, error: sessionError } = await supabase.auth.setSession({
-        access_token: "",
-        refresh_token: savedRefreshToken,
-      });
-
-      if (sessionError) throw sessionError;
-
-      if (data?.user && data?.session) {
-        localStorage.setItem("bio_refresh_token", data.session.refresh_token);
-        sessionStorage.setItem("di_veo_session_active", "true");
-        localStorage.setItem("di_veo_last_active", Date.now().toString());
-        await syncUserInDb(data.user.email || savedEmail, data.user.id);
-        
-        setSuccess("Đăng nhập bằng vân tay thành công! 🔑");
-        setShowBioOverlay(false);
-        setTimeout(() => {
-          router.push("/dashboard");
-          router.refresh();
-        }, 800);
-      }
-    } catch (err: any) {
-      console.error("Lỗi xác thực vân tay:", err);
-      // Đóng overlay ngay lập tức để người dùng nhập mật khẩu bình thường
-      setShowBioOverlay(false);
-      if (err.name !== "NotAllowedError") {
-        setError("Không tìm thấy khóa vân tay hợp lệ trên thiết bị này. Vui lòng nhập mật khẩu.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Đăng ký vân tay mới sau khi đăng nhập password thành công
-  const handleRegisterBiometrics = async (session: any, user: any) => {
-    setShowBioPrompt(false);
-    setLoading(true);
-    try {
-      // 1. Hiện pop-up tạo khóa vân tay
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-
-      await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: { name: "DI Veo", id: window.location.hostname },
-          user: {
-            id: new TextEncoder().encode(user.id),
-            name: user.email,
-            displayName: user.email,
-          },
-          pubKeyCredParams: [{ alg: -7, type: "public-key" }], // ES256
-          authenticatorSelection: { 
-            authenticatorAttachment: "platform", 
-            userVerification: "preferred",
-            residentKey: "required",
-            requireResidentKey: true
-          },
-          timeout: 60000,
-        }
-      });
-
-      // 2. Lưu token vào localStorage
-      localStorage.setItem("bio_auth_enabled", "true");
-      localStorage.setItem("bio_refresh_token", session.refresh_token);
-      localStorage.setItem("bio_email", user.email);
-      sessionStorage.setItem("di_veo_session_active", "true");
-      localStorage.setItem("di_veo_last_active", Date.now().toString());
-      
-      setSuccess("Kích hoạt đăng nhập vân tay thành công cho thiết bị này! 🎉");
-      setTimeout(() => {
-        router.push("/dashboard");
-        router.refresh();
-      }, 1000);
-    } catch (err: any) {
-      console.error("Lỗi đăng ký vân tay:", err);
-      setError("Không thể đăng ký vân tay. Tiếp tục vào dashboard...");
-      setTimeout(() => {
-        router.push("/dashboard");
-        router.refresh();
-      }, 1500);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,28 +32,12 @@ export default function LoginPage() {
         if (data?.user && data?.session) {
           await syncUserInDb(data.user.email || email, data.user.id);
           
-          // Kiểm tra xem thiết bị này đã bật vân tay chưa
-          const bioEnabled = localStorage.getItem("bio_auth_enabled") === "true";
-          const isBiometricSupported = 
-            typeof window !== "undefined" && 
-            window.PublicKeyCredential && 
-            await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-
-          if (!bioEnabled && isBiometricSupported) {
-            // Lưu session tạm để chờ người dùng đồng ý bật vân tay
-            setTempSession({ session: data.session, user: data.user });
-            setShowBioPrompt(true);
-          } else {
-            // Đã bật rồi hoặc thiết bị không hỗ trợ -> Vào thẳng dashboard
-            if (bioEnabled) {
-              // Cập nhật lại refresh token mới nhất
-              localStorage.setItem("bio_refresh_token", data.session.refresh_token);
-            }
-            sessionStorage.setItem("di_veo_session_active", "true");
-            localStorage.setItem("di_veo_last_active", Date.now().toString());
-            router.push("/dashboard");
-            router.refresh();
-          }
+          // Set active session flag and timestamp for security guard (banking style)
+          sessionStorage.setItem("di_veo_session_active", "true");
+          localStorage.setItem("di_veo_last_active", Date.now().toString());
+          
+          router.push("/dashboard");
+          router.refresh();
         }
       } else {
         const { data, error: authError } = await supabase.auth.signUp({
@@ -374,7 +222,7 @@ export default function LoginPage() {
                   ) : (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   )}
                 </button>
@@ -399,13 +247,10 @@ export default function LoginPage() {
               </div>
             )}
 
-          <div className="flex gap-2 mt-2">
             <button
               type="submit"
               disabled={loading}
-              className={`py-3.5 text-white text-sm font-black rounded-xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none bg-gradient-to-r from-emerald-600 to-green-500 ${
-                isLogin && hasBioAuth ? "flex-1" : "w-full"
-              }`}
+              className="w-full mt-2 py-3.5 text-white text-sm font-black rounded-xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none bg-gradient-to-r from-emerald-600 to-green-500"
             >
               {loading ? (
                 <svg className="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -414,22 +259,6 @@ export default function LoginPage() {
                 </svg>
               ) : isLogin ? "Đăng nhập →" : "Tạo tài khoản →"}
             </button>
-
-            {/* Vân tay nhanh thiết kế gọn kế bên nút Đăng nhập */}
-            {isLogin && hasBioAuth && (
-              <button
-                type="button"
-                onClick={triggerBiometricLogin}
-                disabled={loading}
-                title="Đăng nhập nhanh bằng Vân tay / FaceID"
-                className="px-4 border border-emerald-500 dark:border-emerald-600/50 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center shrink-0 active:scale-[0.95]"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11a13.915 13.915 0 00-3.1-8.7A8 8 0 000 8c0 3.86 3.14 7 7 7a6.97 6.97 0 003.89-1.2M12 11c0-3.517 1.009-6.799 2.753-9.571m-3.44 2.04l-.054-.09A13.916 13.916 0 0015 11c0 3.86-3.14 7-7 7a6.97 6.97 0 00-3.89-1.2M12 11a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            )}
-          </div>
           </form>
 
           <p className="text-center text-xs text-slate-300 dark:text-slate-600 mt-8">
@@ -437,83 +266,6 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-
-      {/* ── Popup hỏi kích hoạt Vân tay / FaceID ── */}
-      {showBioPrompt && tempSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl border border-slate-100 dark:border-slate-700">
-            <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-slate-700 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11a13.915 13.915 0 00-3.1-8.7A8 8 0 000 8c0 3.86 3.14 7 7 7a6.97 6.97 0 003.89-1.2M12 11c0-3.517 1.009-6.799 2.753-9.571m-3.44 2.04l-.054-.09A13.916 13.916 0 0015 11c0 3.86-3.14 7-7 7a6.97 6.97 0 00-3.89-1.2M12 11a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            
-            <div className="space-y-1.5">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Kích hoạt vân tay?</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Bạn có muốn sử dụng Vân tay / FaceID để đăng nhập nhanh hơn vào lần sau trên thiết bị này không?
-              </p>
-            </div>
-
-            <div className="flex gap-2.5 pt-2">
-              <button
-                onClick={() => {
-                  setShowBioPrompt(false);
-                  router.push("/dashboard");
-                  router.refresh();
-                }}
-                className="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-xl transition-all"
-              >
-                Để sau
-              </button>
-              <button
-                onClick={() => handleRegisterBiometrics(tempSession.session, tempSession.user)}
-                className="flex-1 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all"
-              >
-                Kích hoạt ngay
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Overlay quét vân tay toàn màn hình khi mới vào app ── */}
-      {showBioOverlay && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors p-6">
-          <div className="w-full max-w-sm flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
-            {/* Vân tay icon */}
-            <div className="w-20 h-20 rounded-3xl bg-emerald-50 dark:bg-slate-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-xl border border-emerald-100 dark:border-slate-700 animate-pulse">
-              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11a13.915 13.915 0 00-3.1-8.7A8 8 0 000 8c0 3.86 3.14 7 7 7a6.97 6.97 0 003.89-1.2M12 11c0-3.517 1.009-6.799 2.753-9.571m-3.44 2.04l-.054-.09A13.916 13.916 0 0015 11c0 3.86-3.14 7-7 7a6.97 6.97 0 00-3.89-1.2M12 11a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            
-            <div className="space-y-2">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Đăng nhập nhanh sinh trắc học</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-[280px] mx-auto">
-                Vui lòng đặt ngón tay vào cảm biến vân tay hoặc quét FaceID để đăng nhập.
-              </p>
-            </div>
-
-            <div className="w-full pt-4 space-y-3">
-              <button
-                type="button"
-                onClick={triggerBiometricLogin}
-                className="w-full py-3.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none"
-              >
-                Nhấp để quét vân tay
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowBioOverlay(false)}
-                className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
-              >
-                Nhập mật khẩu thay thế
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
