@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [hasBioAuth, setHasBioAuth] = useState(false);
   const [showBioPrompt, setShowBioPrompt] = useState(false);
+  const [showBioOverlay, setShowBioOverlay] = useState(false);
   const [tempSession, setTempSession] = useState<any>(null);
 
   const router = useRouter();
@@ -27,7 +28,6 @@ export default function LoginPage() {
       const bioEnabled = localStorage.getItem("bio_auth_enabled") === "true";
       const hasToken = !!localStorage.getItem("bio_refresh_token");
       
-      // Hỗ trợ WebAuthn?
       const isBiometricSupported = 
         typeof window !== "undefined" && 
         window.PublicKeyCredential && 
@@ -35,7 +35,8 @@ export default function LoginPage() {
 
       if (bioEnabled && hasToken && isBiometricSupported) {
         setHasBioAuth(true);
-        // Tự động gọi quét vân tay ngay khi load trang
+        setShowBioOverlay(true);
+        // Tự động gọi pop-up quét vân tay ngay khi load trang
         triggerBiometricLogin();
       }
     };
@@ -76,11 +77,11 @@ export default function LoginPage() {
       if (sessionError) throw sessionError;
 
       if (data?.user && data?.session) {
-        // Cập nhật lại refresh token mới nhất vừa được sinh ra để dùng cho lần sau
         localStorage.setItem("bio_refresh_token", data.session.refresh_token);
         await syncUserInDb(data.user.email || savedEmail, data.user.id);
         
         setSuccess("Đăng nhập bằng vân tay thành công! 🔑");
+        setShowBioOverlay(false);
         setTimeout(() => {
           router.push("/dashboard");
           router.refresh();
@@ -459,6 +460,44 @@ export default function LoginPage() {
                 className="flex-1 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all"
               >
                 Kích hoạt ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Overlay quét vân tay toàn màn hình khi mới vào app ── */}
+      {showBioOverlay && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors p-6">
+          <div className="w-full max-w-sm flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
+            {/* Vân tay icon */}
+            <div className="w-20 h-20 rounded-3xl bg-emerald-50 dark:bg-slate-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-xl border border-emerald-100 dark:border-slate-700 animate-pulse">
+              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11a13.915 13.915 0 00-3.1-8.7A8 8 0 000 8c0 3.86 3.14 7 7 7a6.97 6.97 0 003.89-1.2M12 11c0-3.517 1.009-6.799 2.753-9.571m-3.44 2.04l-.054-.09A13.916 13.916 0 0015 11c0 3.86-3.14 7-7 7a6.97 6.97 0 00-3.89-1.2M12 11a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Đăng nhập nhanh sinh trắc học</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-[280px] mx-auto">
+                Vui lòng đặt ngón tay vào cảm biến vân tay hoặc quét FaceID để đăng nhập.
+              </p>
+            </div>
+
+            <div className="w-full pt-4 space-y-3">
+              <button
+                type="button"
+                onClick={triggerBiometricLogin}
+                className="w-full py-3.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none"
+              >
+                Nhấp để quét vân tay
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBioOverlay(false)}
+                className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
+              >
+                Nhập mật khẩu thay thế
               </button>
             </div>
           </div>

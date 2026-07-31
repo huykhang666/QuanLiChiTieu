@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
+import { createClient } from "@/lib/supabase";
 
 /* ─── Types ─── */
 type DrawerSection = "transactions" | "summary" | "budgets" | "goals" | "settings";
@@ -929,11 +930,28 @@ function SettingsPanel() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Biometrics states
+  const [bioEnabled, setBioEnabled] = useState(false);
+  const [isBioSupported, setIsBioSupported] = useState(false);
+  const [bioRegistering, setBioRegistering] = useState(false);
+
   useEffect(() => {
     fetch("/api/user/settings")
       .then(r => r.json())
       .then(d => setRate(d.savingsRate ?? 25))
       .finally(() => setLoading(false));
+
+    // Check if device supports WebAuthn and if it is enabled locally
+    const checkBio = async () => {
+      const enabled = localStorage.getItem("bio_auth_enabled") === "true";
+      setBioEnabled(enabled);
+      const supported = 
+        typeof window !== "undefined" && 
+        window.PublicKeyCredential && 
+        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      setIsBioSupported(!!supported);
+    };
+    checkBio();
   }, []);
 
   const handleSave = async () => {
@@ -949,10 +967,91 @@ function SettingsPanel() {
     } finally { setSaving(false); }
   };
 
+  const handleToggleBio = async () => {
+    if (!bioEnabled) {
+      setBioRegistering(true);
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          alert("Vui lòng đăng nhập lại để thực hiện.");
+          return;
+        }
+
+        // Prompt biometric device enrollment
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+
+        await navigator.credentials.create({
+          publicKey: {
+            challenge,
+            rp: { name: "DI Veo", id: window.location.hostname },
+            user: {
+              id: new TextEncoder().encode(user.id),
+              name: user.email!,
+              displayName: user.email!,
+            },
+            pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+            authenticatorSelection: { 
+              authenticatorAttachment: "platform", 
+              userVerification: "required" 
+            },
+            timeout: 60000,
+          }
+        });
+
+        // Save session
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session) {
+          localStorage.setItem("bio_refresh_token", sessionData.session.refresh_token);
+        }
+        localStorage.setItem("bio_auth_enabled", "true");
+        localStorage.setItem("bio_email", user.email!);
+        setBioEnabled(true);
+      } catch (err) {
+        console.error("Đăng ký vân tay thất bại:", err);
+        alert("Thiết bị này không hỗ trợ hoặc bạn đã từ chối xác thực.");
+      } finally {
+        setBioRegistering(false);
+      }
+    } else {
+      // Disable biometrics
+      localStorage.removeItem("bio_auth_enabled");
+      localStorage.removeItem("bio_refresh_token");
+      localStorage.removeItem("bio_email");
+      setBioEnabled(false);
+    }
+  };
+
   if (loading) return <Spinner />;
 
   return (
     <div className="space-y-4 max-w-lg mx-auto">
+      {/* Biometrics Config card */}
+      {isBioSupported && (
+        <div className="p-5 bg-white border border-[#E4E4E2] dark:border-slate-700 dark:bg-slate-800 rounded-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Đăng nhập sinh trắc học</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Kích hoạt Vân tay / FaceID để mở khóa nhanh trên thiết bị này.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleBio}
+              disabled={bioRegistering}
+              className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 focus:outline-none flex items-center ${
+                bioEnabled ? "bg-[#16A34A] justify-end" : "bg-[#E4E4E2] dark:bg-slate-700 justify-start"
+              }`}
+            >
+              <span className="w-4 h-4 rounded-full bg-white shadow-md block" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Savings Rate card */}
       <div className="p-5 bg-white border border-[#E4E4E2] rounded-xl space-y-4">
         <div>
           <p className="text-sm font-bold text-[#111111]">Tỉ lệ tiết kiệm đề xuất</p>
