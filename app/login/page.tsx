@@ -79,6 +79,7 @@ export default function LoginPage() {
       if (data?.user && data?.session) {
         localStorage.setItem("bio_refresh_token", data.session.refresh_token);
         sessionStorage.setItem("di_veo_session_active", "true");
+        localStorage.setItem("di_veo_last_active", Date.now().toString());
         await syncUserInDb(data.user.email || savedEmail, data.user.id);
         
         setSuccess("Đăng nhập bằng vân tay thành công! 🔑");
@@ -132,6 +133,7 @@ export default function LoginPage() {
       localStorage.setItem("bio_refresh_token", session.refresh_token);
       localStorage.setItem("bio_email", user.email);
       sessionStorage.setItem("di_veo_session_active", "true");
+      localStorage.setItem("di_veo_last_active", Date.now().toString());
       
       setSuccess("Kích hoạt đăng nhập vân tay thành công cho thiết bị này! 🎉");
       setTimeout(() => {
@@ -182,6 +184,7 @@ export default function LoginPage() {
               localStorage.setItem("bio_refresh_token", data.session.refresh_token);
             }
             sessionStorage.setItem("di_veo_session_active", "true");
+            localStorage.setItem("di_veo_last_active", Date.now().toString());
             router.push("/dashboard");
             router.refresh();
           }
@@ -197,6 +200,7 @@ export default function LoginPage() {
           if (!syncResult.success) throw new Error(syncResult.error || "Không thể đồng bộ người dùng.");
           if (data.session) {
             sessionStorage.setItem("di_veo_session_active", "true");
+            localStorage.setItem("di_veo_last_active", Date.now().toString());
             setSuccess("Đăng ký thành công! Đang chuyển hướng...");
             setTimeout(() => { 
               router.push("/dashboard"); 

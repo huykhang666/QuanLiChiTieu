@@ -4,16 +4,10 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
-/**
- * SessionGuard ensures that the session is bound only to the current
- * browser tab session (sessionStorage). If the user opens a new tab,
- * re-opens the browser, or swipes the app away on mobile, the sessionStorage 
- * is cleared.
- * 
- * In that case, SessionGuard automatically triggers signOut on Supabase 
- * to wipe any persistent cookies and forces a redirect back to the /login page,
- * ensuring biometrics / password must be verified again.
- */
+// Banking-style timeout: If the app is inactive or backgrounded 
+// for more than 30 seconds, force logout and require biometrics/password again.
+const INACTIVITY_TIMEOUT_MS = 30 * 1000; 
+
 export default function SessionGuard() {
   const router = useRouter();
   const pathname = usePathname();
@@ -27,20 +21,69 @@ export default function SessionGuard() {
       return;
     }
 
-    const checkSession = async () => {
+    const performSignOut = async () => {
+      // Clear token and flags
+      sessionStorage.removeItem("di_veo_session_active");
+      localStorage.removeItem("di_veo_last_active");
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    };
+
+    const verifyActiveSession = async () => {
       const isSessionActive = sessionStorage.getItem("di_veo_session_active") === "true";
-      
+      const lastActiveStr = localStorage.getItem("di_veo_last_active");
+
+      // 1. If basic sessionStorage flag is missing (new tab/browser start)
       if (!isSessionActive) {
-        // Wipe local storage refresh tokens and sign out of Supabase (clears cookies)
-        await supabase.auth.signOut();
-        router.push("/login");
-        router.refresh();
-      } else {
-        setChecking(false);
+        await performSignOut();
+        return;
+      }
+
+      // 2. If the last active timestamp exists, check if the inactivity window has passed
+      if (lastActiveStr) {
+        const elapsed = Date.now() - Number(lastActiveStr);
+        if (elapsed > INACTIVITY_TIMEOUT_MS) {
+          await performSignOut();
+          return;
+        }
+      }
+
+      // Session is still valid, let the user in
+      setChecking(false);
+      localStorage.setItem("di_veo_last_active", Date.now().toString());
+    };
+
+    // Initial check on mount/navigation
+    verifyActiveSession();
+
+    // Heartbeat: update the activity timestamp every 2 seconds while the user is active on the page
+    const heartbeatInterval = setInterval(() => {
+      if (sessionStorage.getItem("di_veo_session_active") === "true") {
+        localStorage.setItem("di_veo_last_active", Date.now().toString());
+      }
+    }, 2000);
+
+    // Visibility Listener: Check if user returned to the app after switching apps or locking phone
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        verifyActiveSession();
       }
     };
 
-    checkSession();
+    // Window Focus Listener: Detect returning to app
+    const handleFocus = () => {
+      verifyActiveSession();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, [pathname, router, supabase.auth]);
 
   if (checking && pathname !== "/login") {
