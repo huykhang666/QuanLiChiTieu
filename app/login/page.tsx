@@ -111,7 +111,7 @@ export default function LoginPage() {
           challenge,
           rp: { name: "DI Veo", id: window.location.hostname },
           user: {
-            id: Uint8Array.from(user.id, c => c.charCodeAt(0)),
+            id: new TextEncoder().encode(user.id),
             name: user.email,
             displayName: user.email,
           },
