@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import ThemeToggle from "@/components/ThemeToggle";
 import QuickAddModal from "@/components/QuickAddModal";
+import AdjustBalanceModal from "@/components/AdjustBalanceModal";
 import NavDrawer from "@/components/NavDrawer";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -55,6 +56,7 @@ export default function DashboardPage() {
   const [chartPeriod, setChartPeriod] = useState<"week" | "month">("week");
   const [chartLoading, setChartLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [adjustBalanceOpen, setAdjustBalanceOpen] = useState(false);
   const [drawerSection, setDrawerSection] = useState<DrawerSection | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
@@ -306,10 +308,20 @@ export default function DashboardPage() {
 
             <div className="flex flex-wrap items-center gap-3">
               {/* Số tiền hiện có */}
-              <div className="backdrop-blur-md bg-white/20 border border-white/30 rounded-2xl px-5 py-3 text-white shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-emerald-100 tracking-wider uppercase">Số tiền hiện có</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+              <div
+                onClick={() => setAdjustBalanceOpen(true)}
+                className="backdrop-blur-md bg-white/20 hover:bg-white/25 border border-white/30 rounded-2xl px-5 py-3 text-white shadow-sm cursor-pointer transition-all group"
+                title="Nhấp để điều chỉnh số tiền hiện có"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-emerald-100 tracking-wider uppercase">Số tiền hiện có</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                  </div>
+                  <span className="text-[11px] bg-white/20 group-hover:bg-white/30 text-white font-medium px-2 py-0.5 rounded-full transition flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    Sửa
+                  </span>
                 </div>
                 <p className="text-2xl sm:text-3xl font-black mt-0.5 tracking-tight">
                   {fmt(totalBalance)}
@@ -356,9 +368,16 @@ export default function DashboardPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số tiền hiện có</span>
-              <span className="text-xs bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full">
-                Ví của bạn
-              </span>
+              <button
+                type="button"
+                onClick={() => setAdjustBalanceOpen(true)}
+                className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 active:scale-95"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Điều chỉnh
+              </button>
             </div>
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
@@ -621,6 +640,20 @@ export default function DashboardPage() {
         onClose={() => setModalOpen(false)}
         onSuccess={async () => {
           try { setSummary(await loadSummary(chartPeriod)); } catch { }
+        }}
+      />
+      <AdjustBalanceModal
+        open={adjustBalanceOpen}
+        onClose={() => setAdjustBalanceOpen(false)}
+        currentBalance={totalBalance}
+        onSuccess={async () => {
+          try {
+            const [sData] = await Promise.all([
+              loadSummary(chartPeriod),
+              loadPreload(),
+            ]);
+            setSummary(sData);
+          } catch { }
         }}
       />
       <NavDrawer
