@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 interface SummaryData {
+  total: { income: number; expense: number; balance: number };
   today: { income: number; expense: number };
   week: { income: number; expense: number };
   month: { income: number; expense: number };
@@ -166,6 +167,9 @@ export default function DashboardPage() {
 
   if (!user || !summary) return null;
 
+  const totalBalance = summary.total?.balance ?? (summary.month.income - summary.month.expense);
+  const totalIncome = summary.total?.income ?? summary.month.income;
+  const totalExpense = summary.total?.expense ?? summary.month.expense;
   const weekBalance = summary.week.income - summary.week.expense;
   const todayBalance = summary.today.income - summary.today.expense;
   const spendRate = summary.week.income > 0 ? Math.min(100, (summary.week.expense / summary.week.income) * 100) : 0;
@@ -300,10 +304,22 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className={`backdrop-blur rounded-2xl px-5 py-3 border hidden sm:block transition-all ${weekBalance >= 0 ? "bg-white/15 border-white/20" : "bg-white/95 border-white/60 shadow-lg"}`}>
-                <p className={`text-xs font-semibold ${weekBalance >= 0 ? "text-emerald-100" : "text-slate-600"}`}>Số dư tuần</p>
-                <p className={`text-2xl font-black mt-0.5 tracking-tight ${weekBalance >= 0 ? "text-white" : "text-red-600"}`}>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Số tiền hiện có */}
+              <div className="backdrop-blur-md bg-white/20 border border-white/30 rounded-2xl px-5 py-3 text-white shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-emerald-100 tracking-wider uppercase">Số tiền hiện có</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                </div>
+                <p className="text-2xl sm:text-3xl font-black mt-0.5 tracking-tight">
+                  {fmt(totalBalance)}
+                </p>
+              </div>
+
+              {/* Số dư tuần */}
+              <div className={`backdrop-blur rounded-2xl px-4 py-3 border hidden md:block transition-all ${weekBalance >= 0 ? "bg-white/10 border-white/20 text-emerald-100" : "bg-white/95 border-white/60 text-slate-700 shadow-lg"}`}>
+                <p className="text-xs font-semibold">Số dư tuần này</p>
+                <p className={`text-xl font-black mt-0.5 tracking-tight ${weekBalance >= 0 ? "text-white" : "text-red-600"}`}>
                   {weekBalance >= 0 ? "+" : "−"}{new Intl.NumberFormat("vi-VN").format(Math.abs(weekBalance))} đ
                 </p>
               </div>
@@ -334,7 +350,39 @@ export default function DashboardPage() {
         )}
 
         {/* ── Stats ──────────────────────────────────────────────────── */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          {/* Số tiền hiện có */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số tiền hiện có</span>
+              <span className="text-xs bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full">
+                Ví của bạn
+              </span>
+            </div>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Tổng thu tích lũy</span>
+                </div>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+{fmt(totalIncome)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Tổng chi tích lũy</span>
+                </div>
+                <span className="text-sm font-bold text-red-500 dark:text-red-400">−{fmt(totalExpense)}</span>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <span className="text-sm text-slate-400 dark:text-slate-500">Khả dụng</span>
+              <span className={`text-2xl font-black tracking-tight ${totalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                {fmt(totalBalance)}
+              </span>
+            </div>
+          </div>
 
           {/* Hôm nay */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">

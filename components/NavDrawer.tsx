@@ -481,9 +481,17 @@ function SummaryPanel() {
           </div>
         )}
 
-        <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl">
-          <p className="text-xs text-[#16A34A] font-bold">Gợi ý tiết kiệm tuần này</p>
-          <p className="text-2xl font-bold text-[#16A34A] mt-1">{fmt(data.weeklySummary?.[0]?.suggestedSavings || 0)}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3.5 bg-white border border-[#E4E4E2] rounded-xl">
+            <p className="text-[11px] text-[#787774] font-semibold">Số tiền hiện có</p>
+            <p className={`text-xl font-black mt-0.5 ${(data.total?.balance ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#9F2F2D]"}`}>
+              {fmt(data.total?.balance ?? 0)}
+            </p>
+          </div>
+          <div className="p-3.5 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl">
+            <p className="text-[11px] text-[#16A34A] font-semibold">Tiết kiệm tuần này</p>
+            <p className="text-xl font-black text-[#16A34A] mt-0.5">{fmt(data.weeklySummary?.[0]?.suggestedSavings || 0)}</p>
+          </div>
         </div>
       </div>
 

@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     ));
 
     // Thực hiện tất cả các truy vấn DB đồng thời (Parallel Batch)
-    const [transactions, dbUser, budgets] = await Promise.all([
+    const [transactions, dbUser, budgets, totalIncomeAgg, totalExpenseAgg] = await Promise.all([
       prisma.transaction.findMany({
         where: { userId: user.id, date: { gte: globalStart, lte: globalEnd } },
       }),
@@ -64,7 +64,19 @@ export async function GET(req: NextRequest) {
         where: { userId: user.id, month: currentMonth, year: currentYear },
         include: { category: true },
       }),
+      prisma.transaction.aggregate({
+        where: { userId: user.id, type: "income" },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { userId: user.id, type: "expense" },
+        _sum: { amount: true },
+      }),
     ]);
+
+    const totalIncome = totalIncomeAgg._sum.amount ?? 0;
+    const totalExpense = totalExpenseAgg._sum.amount ?? 0;
+    const totalBalance = totalIncome - totalExpense;
 
     // Phân loại và tính toán dữ liệu trong bộ nhớ (In-memory filter - cực kì nhanh)
     // Hôm nay
@@ -150,6 +162,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
+      total: { income: totalIncome, expense: totalExpense, balance: totalBalance },
       today: { income: todayIncome, expense: todayExpense },
       week: { income: weekIncome, expense: weekExpense },
       month: { income: monthIncome, expense: monthExpense },

@@ -43,9 +43,17 @@ export async function GET(req: NextRequest) {
       orderBy: { date: "desc" },
     });
 
-    // 1. Phân nhóm theo tuần (Thứ Hai -> Chủ Nhật)
+    // 1. Phân nhóm theo tuần (Thứ Hai -> Chủ Nhật) & tính tổng tích lũy
+    let totalIncome = 0;
+    let totalExpense = 0;
     const weeklyGroups: { [key: string]: { income: number; expense: number } } = {};
     for (const t of transactions) {
+      if (t.type === "income") {
+        totalIncome += t.amount;
+      } else {
+        totalExpense += t.amount;
+      }
+
       const weekKey = getStartOfWeek(new Date(t.date));
       if (!weeklyGroups[weekKey]) {
         weeklyGroups[weekKey] = { income: 0, expense: 0 };
@@ -56,6 +64,7 @@ export async function GET(req: NextRequest) {
         weeklyGroups[weekKey].expense += t.amount;
       }
     }
+    const totalBalance = totalIncome - totalExpense;
 
     const weeklySummary = Object.entries(weeklyGroups)
       .map(([weekStart, stats]) => {
@@ -126,6 +135,7 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.value - a.value); // Danh mục chi tiêu nhiều nhất xếp trước
 
     return NextResponse.json({
+      total: { income: totalIncome, expense: totalExpense, balance: totalBalance },
       weeklySummary,
       monthlySummary,
       categoryBreakdown,
