@@ -367,7 +367,7 @@ export default function DashboardPage() {
           {/* Số tiền hiện có */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số tiền hiện có</span>
                 <button
                   type="button"
@@ -380,21 +380,21 @@ export default function DashboardPage() {
                   Điều chỉnh
                 </button>
               </div>
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-sm text-slate-500 dark:text-slate-400">Tổng thu tích lũy</span>
-                  </div>
-                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+{fmt(totalIncome)}</span>
-                </div>
+
+              {/* Số dư ví to, rõ ràng */}
+              <div className="py-2.5">
+                <p className={`text-3xl font-black tracking-tight ${totalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                  {fmt(totalBalance)}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-medium">
+                  Số dư ví khả dụng
+                </p>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <span className="text-sm text-slate-400 dark:text-slate-500">Khả dụng</span>
-              <span className={`text-2xl font-black tracking-tight ${totalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
-                {fmt(totalBalance)}
-              </span>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <span className="text-xs text-slate-400 dark:text-slate-500">Tự động trừ khi chi tiêu</span>
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             </div>
           </div>
 
@@ -634,7 +634,13 @@ export default function DashboardPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSuccess={async () => {
-          try { setSummary(await loadSummary(chartPeriod)); } catch { }
+          try {
+            const [sData] = await Promise.all([
+              loadSummary(chartPeriod),
+              loadPreload(),
+            ]);
+            setSummary(sData);
+          } catch { }
         }}
       />
       <AdjustBalanceModal
@@ -655,7 +661,15 @@ export default function DashboardPage() {
         section={drawerSection}
         onClose={() => setDrawerSection(null)}
         preloadedData={preloadedData}
-        onDataMutated={loadPreload}
+        onDataMutated={async () => {
+          try {
+            const [sData] = await Promise.all([
+              loadSummary(chartPeriod),
+              loadPreload(),
+            ]);
+            setSummary(sData);
+          } catch { }
+        }}
       />
     </div>
   );
