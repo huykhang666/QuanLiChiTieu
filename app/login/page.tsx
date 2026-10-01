@@ -36,8 +36,7 @@ export default function LoginPage() {
           sessionStorage.setItem("di_veo_session_active", "true");
           localStorage.setItem("di_veo_last_active", Date.now().toString());
           
-          router.push("/dashboard");
-          router.refresh();
+          window.location.href = "/dashboard";
         }
       } else {
         const { data, error: authError } = await supabase.auth.signUp({
@@ -53,8 +52,7 @@ export default function LoginPage() {
             localStorage.setItem("di_veo_last_active", Date.now().toString());
             setSuccess("Đăng ký thành công! Đang chuyển hướng...");
             setTimeout(() => { 
-              router.push("/dashboard"); 
-              router.refresh(); 
+              window.location.href = "/dashboard";
             }, 1500);
           } else {
             setSuccess("Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.");
