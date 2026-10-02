@@ -362,41 +362,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── Stats ──────────────────────────────────────────────────── */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-          {/* Số tiền hiện có */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số tiền hiện có</span>
-                <button
-                  type="button"
-                  onClick={() => setAdjustBalanceOpen(true)}
-                  className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 active:scale-95"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  Điều chỉnh
-                </button>
-              </div>
-
-              {/* Số dư ví to, rõ ràng */}
-              <div className="py-2.5">
-                <p className={`text-3xl font-black tracking-tight ${totalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
-                  {fmt(totalBalance)}
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-medium">
-                  Số dư ví khả dụng
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <span className="text-xs text-slate-400 dark:text-slate-500">Tự động trừ khi chi tiêu</span>
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            </div>
-          </div>
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
           {/* Hôm nay */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
